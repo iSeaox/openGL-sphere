@@ -12,15 +12,20 @@ public:
 	Block blocks[NB_BLOCKS_PER_CHUNK];
 
 	Chunk();
-	Chunk(glm::vec3 position, CubeModel& cubeMod);
 	~Chunk();
 
 	void gen(glm::mat4 gradientMatrices[], int genStage, glm::mat4 intraGradientMatrices[][32][32], int intraGenStage, float IGMCoef[]);
 	void pushMatrices();
 	unsigned int getChunkVAO() const;
+
 	glm::vec3 getPosition() const;
+	void setPosition(glm::vec3 pos);
+
+	void setCubeModel(CubeModel& cubeMod);
 
 	glm::mat4 getIntraStageMatrix(glm::vec3 bPos, float unitSize, glm::mat4 intraGradientMatrices[32][32]);
+
+	void setupGL();
 
 private:
 	glm::vec3 position;
@@ -35,12 +40,6 @@ private:
 
 inline Chunk::Chunk() {}
 
-inline Chunk::Chunk(glm::vec3 position, CubeModel& cubeMod) {
-	this->position = position;
-	glGenBuffers(1, &chunkModelVBO);
-	glGenVertexArrays(1, &chunkVAO);
-	cubeMod.bindVertexVBOTo(chunkVAO);
-}
 
 inline void Chunk::gen(glm::mat4 gradientMatrices[], int genStage, glm::mat4 intraGradientMatrices[][32][32], int intraGenStage, float IGMCoef[]) {
 	int x = sqrt(NB_BLOCKS_PER_CHUNK) * position.x;
@@ -120,6 +119,14 @@ inline glm::vec3 Chunk::getPosition() const {
 	return position;
 }
 
+inline void Chunk::setPosition(glm::vec3 pos) {
+	this->position = pos;
+}
+
+inline void Chunk::setCubeModel(CubeModel& cubeMod) {
+	cubeMod.bindVertexVBOTo(chunkVAO);
+}
+
 inline glm::mat4 Chunk::getIntraStageMatrix(glm::vec3 bPos, float unitSize, glm::mat4 intraGradientMatrices[32][32]) {
 	float x = bPos.x - position.x * sqrt(NB_BLOCKS_PER_CHUNK);
 	float z = bPos.z - position.z * sqrt(NB_BLOCKS_PER_CHUNK);
@@ -129,6 +136,11 @@ inline glm::mat4 Chunk::getIntraStageMatrix(glm::vec3 bPos, float unitSize, glm:
 	glm::mat4 result = intraGradientMatrices[indexX][indexZ];
 
 	return result;
+}
+
+inline void Chunk::setupGL() {
+	glGenBuffers(1, &chunkModelVBO);
+	glGenVertexArrays(1, &chunkVAO);
 }
 
 inline float Chunk::bilinearinterHeight(glm::vec3 bPos, glm::mat4 gradients) {

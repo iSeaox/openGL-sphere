@@ -34,6 +34,8 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+World* world;
+
 int main() {
 	// --- init ---
 	GLFWwindow* window = loadGLFW(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -53,8 +55,8 @@ int main() {
 	DirLight dirLight(getColorFrom(233, 221, 202), glm::vec3(-0.2f, -1.0f, -0.3f), 1.0f, 0.5f, 0.8f);
 
 	// --- World ---
-	World world;
-	world.gen();
+	world = new World();
+	world->gen();
 
 	while (!glfwWindowShouldClose(window)) {
 		float currentFrame = static_cast<float>(glfwGetTime());
@@ -93,8 +95,8 @@ int main() {
 		base_shader.setFloat("material.shininess", cMat.shininess);
 
 		int i = 0;
-		for (Chunk chunk : world.getChunks()) {
-			glBindVertexArray(chunk.getChunkVAO());
+		for (Chunk* ptChunk : world->getChunks()) {
+			glBindVertexArray(ptChunk->getChunkVAO());
 			glDrawArraysInstanced(GL_TRIANGLES, 0, 36, Chunk::NB_BLOCKS_PER_CHUNK);
 			glBindVertexArray(0);
 			i++;
@@ -104,6 +106,8 @@ int main() {
 		glfwPollEvents();
 	}
 	glfwTerminate();
+
+	delete world;
 	return 0;
 }
 

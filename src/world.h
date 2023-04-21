@@ -20,24 +20,21 @@ class World {
 public:
 
 	const static unsigned int GRAD_MAT_MAX_SIZE = 32;
-
-	World();
-	~World();
-	void gen();
-	std::vector<Chunk> getChunks() const;
-	bool hasChunk(glm::vec3 chunkPosition) const;
-	bool hasChunk(float x, float y, float z) const;
-
-private:
 	const static unsigned int NB_STAGE = 4;
 	const static unsigned int NB_INTRA_STAGE = 2;
 	const static unsigned int NB_CHUNK = 256;
 
+	World();
+	~World();
+	void gen();
+	std::vector<Chunk*> getChunks() const;
+
+private:
 
 	Block emptyBlock;
 
 	CubeModel cubeMod;
-	std::vector<Chunk> chunks;
+	Chunk* chunks[NB_CHUNK];
 
 
 
@@ -48,14 +45,18 @@ private:
 
 };
 
-inline World::World() {}
+inline World::World() {
+	for (int i = 0; i < NB_CHUNK; i++) {
+		chunks[i] = new Chunk;
+		chunks[i]->setupGL();
+		chunks[i]->setCubeModel(cubeMod);
+	}
+}
 
 inline void World::gen() {
 	srand(static_cast<unsigned int>(time(NULL)));
 
 	// --- Generate HeightMap ---
-	
-
 	// -- Stage 1 --
 	float coef = 12.5f;
 	float unitSize = 8 * sqrt(Chunk::NB_BLOCKS_PER_CHUNK);
@@ -109,12 +110,9 @@ inline void World::gen() {
 		getIntraStageMatricesFor(x, z, IGMCoef[0], gradientInraStage1, intraStagesMatrices[0]);
 		getIntraStageMatricesFor(x, z, IGMCoef[1], gradientInraStage2, intraStagesMatrices[1]);
 
+		chunks[i]->setPosition(glm::vec3(x, 0.0f, z));
+		chunks[i]->gen(stageMatrices, NB_STAGE, intraStagesMatrices, NB_INTRA_STAGE, IGMCoef);
 
-
-
-		Chunk chunk(glm::vec3(x, 0.0f, z), cubeMod);
-		chunk.gen(stageMatrices, NB_STAGE, intraStagesMatrices, NB_INTRA_STAGE, IGMCoef);
-		chunks.push_back(chunk);
 		x++;
 		if(x == static_cast<int>(sqrt(NB_CHUNK))) {
 			x = 0;
@@ -122,33 +120,15 @@ inline void World::gen() {
 		}
 	}
 
-	for (Chunk chunk : chunks) {
-		chunk.pushMatrices();
+	for (Chunk* ptChunk : chunks) {
+		ptChunk->pushMatrices();
 	}
 }
 
-inline std::vector<Chunk> World::getChunks() const {
-	return chunks;
-}
-
-inline bool World::hasChunk(glm::vec3 chunkPosition) const
-{
-	for (Chunk chunk : chunks) {
-		if (chunkPosition == chunk.getPosition()) {
-			return true;
-		}
-	}
-	return false;
-}
-
-inline bool World::hasChunk(float x, float y, float z) const
-{
-	for (Chunk chunk : chunks) {
-		if (glm::vec3(x, y, z) == chunk.getPosition()) {
-			return true;
-		}
-	}
-	return false;
+inline std::vector<Chunk*> World::getChunks() const {
+	std::vector<Chunk*> result;
+	for (Chunk* ptChunk : chunks) result.push_back(ptChunk);
+	return result;
 }
 
 
@@ -210,4 +190,8 @@ inline void World::getIntraStageMatricesFor(int x, int z, float unitSize, glm::m
 }
 
 
-World::~World() {}
+World::~World() {
+	for (int i = 0; i < NB_CHUNK; i++) {
+		delete chunks[i];
+	}
+}

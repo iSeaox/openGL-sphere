@@ -31,7 +31,7 @@ public:
 private:
 	const static unsigned int NB_STAGE = 4;
 	const static unsigned int NB_INTRA_STAGE = 2;
-	const static unsigned int NB_CHUNK = 64;
+	const static unsigned int NB_CHUNK = 256;
 
 
 	Block emptyBlock;
@@ -57,38 +57,38 @@ inline void World::gen() {
 	
 
 	// -- Stage 1 --
-	float coef = 15.0f;
+	float coef = 12.5f;
 	float unitSize = 8 * sqrt(Chunk::NB_BLOCKS_PER_CHUNK);
 	glm::mat4 gradientStage1[1][GRAD_MAT_MAX_SIZE];
 	genStageMatrices(gradientStage1, coef, unitSize, 1, 1);
 
 
 	// -- Stage 2 --
-	coef = 20.0f;
+	coef = 10.0f;
 	unitSize = 4 * sqrt(Chunk::NB_BLOCKS_PER_CHUNK);
 	glm::mat4 gradientStage2[2][GRAD_MAT_MAX_SIZE];
 	genStageMatrices(gradientStage2, coef, unitSize, 2, 2);
 
 	// -- Stage 3 --
-	coef = 25.0f;
+	coef = 15.0f;
 	unitSize = 2 * sqrt(Chunk::NB_BLOCKS_PER_CHUNK);
 	glm::mat4 gradientStage3[4][GRAD_MAT_MAX_SIZE];
 	genStageMatrices(gradientStage3, coef, unitSize, 4, 4);
 
 	// -- Stage 4 --
-	coef = 10.0f;
+	coef = 8.0f;
 	unitSize = 1 * sqrt(Chunk::NB_BLOCKS_PER_CHUNK);
 	glm::mat4 gradientStage4[8][GRAD_MAT_MAX_SIZE];
 	genStageMatrices(gradientStage4, coef, unitSize, 8, 8);
 
 	// -- Intra Stage 1 --
-	coef = 8.0f;
+	coef = 4.0f;
 	unitSize = 0.5f * sqrt(Chunk::NB_BLOCKS_PER_CHUNK);
 	glm::mat4 gradientInraStage1[GRAD_MAT_MAX_SIZE][GRAD_MAT_MAX_SIZE];
 	genStageMatrices(gradientInraStage1, coef, unitSize, 16, 16);
 
 	// -- Intra Stage 2 --
-	coef = 3.0f;
+	coef = 1.5f;
 	unitSize = 0.25f * sqrt(Chunk::NB_BLOCKS_PER_CHUNK);
 	glm::mat4 gradientInraStage2[GRAD_MAT_MAX_SIZE][GRAD_MAT_MAX_SIZE];
 	genStageMatrices(gradientInraStage2, coef, unitSize, 32, 32);
@@ -115,9 +115,8 @@ inline void World::gen() {
 		Chunk chunk(glm::vec3(x, 0.0f, z), cubeMod);
 		chunk.gen(stageMatrices, NB_STAGE, intraStagesMatrices, NB_INTRA_STAGE, IGMCoef);
 		chunks.push_back(chunk);
-
 		x++;
-		if(x == 8) {
+		if(x == static_cast<int>(sqrt(NB_CHUNK))) {
 			x = 0;
 			z++;
 		}

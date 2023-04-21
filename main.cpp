@@ -92,10 +92,12 @@ int main() {
 		base_shader.setVec3("material.specular", cMat.specular);
 		base_shader.setFloat("material.shininess", cMat.shininess);
 
+		int i = 0;
 		for (Chunk chunk : world.getChunks()) {
 			glBindVertexArray(chunk.getChunkVAO());
 			glDrawArraysInstanced(GL_TRIANGLES, 0, 36, Chunk::NB_BLOCKS_PER_CHUNK);
 			glBindVertexArray(0);
+			i++;
 		}
 
 		glfwSwapBuffers(window);

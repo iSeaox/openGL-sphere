@@ -7,7 +7,7 @@
 
 class Chunk {
 public:
-	const static int NB_BLOCKS_PER_CHUNK = 32 * 32;
+	const static int NB_BLOCKS_PER_CHUNK = 16 * 16;
 
 	Block blocks[NB_BLOCKS_PER_CHUNK];
 

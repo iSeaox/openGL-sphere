@@ -147,6 +147,7 @@
     <ClInclude Include="src\material.h" />
     <ClInclude Include="src\shader.h" />
     <ClInclude Include="src\stb_image.h" />
+    <ClInclude Include="src\utils\matrixUtils.h" />
     <ClInclude Include="src\world.h" />
   </ItemGroup>
   <ItemGroup>

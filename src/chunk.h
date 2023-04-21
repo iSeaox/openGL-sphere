@@ -1,20 +1,28 @@
 #pragma once
 
 #include "blocks/cubeModel.h"
+#include "world.h"
+
+#include <vector>
 
 class Chunk {
 public:
 	const static int NB_BLOCKS_PER_CHUNK = 32 * 32;
 
-	Chunk(glm::vec3 position, glm::vec4 heightValues, CubeModel& cubeMod);
+	Block blocks[NB_BLOCKS_PER_CHUNK];
+
+	Chunk();
+	Chunk(glm::vec3 position, CubeModel& cubeMod);
 	~Chunk();
-	void gen();
+
+	void gen(glm::mat4 gradientMatrices[], int genStage, glm::mat4 intraGradientMatrices[][32][32], int intraGenStage, float IGMCoef[]);
+	void pushMatrices();
 	unsigned int getChunkVAO() const;
 	glm::vec3 getPosition() const;
-	glm::vec4 getHeightvalues() const;
+
+	glm::mat4 getIntraStageMatrix(glm::vec3 bPos, float unitSize, glm::mat4 intraGradientMatrices[32][32]);
 
 private:
-	Block blocks[NB_BLOCKS_PER_CHUNK];
 	glm::vec3 position;
 
 	unsigned int chunkVAO;
@@ -22,18 +30,19 @@ private:
 
 	glm::mat4 chunkModelMatrices[NB_BLOCKS_PER_CHUNK];
 
-	glm::vec4 heightValuesS1;
+	float bilinearinterHeight(glm::vec3 bPos, glm::mat4 gradients);
 };
 
-inline Chunk::Chunk(glm::vec3 position, glm::vec4 heightValuesS1, CubeModel& cubeMod) {
+inline Chunk::Chunk() {}
+
+inline Chunk::Chunk(glm::vec3 position, CubeModel& cubeMod) {
 	this->position = position;
-	this->heightValuesS1 = heightValuesS1;
 	glGenBuffers(1, &chunkModelVBO);
 	glGenVertexArrays(1, &chunkVAO);
 	cubeMod.bindVertexVBOTo(chunkVAO);
 }
 
-inline void Chunk::gen() {
+inline void Chunk::gen(glm::mat4 gradientMatrices[], int genStage, glm::mat4 intraGradientMatrices[][32][32], int intraGenStage, float IGMCoef[]) {
 	int x = sqrt(NB_BLOCKS_PER_CHUNK) * position.x;
 	int z = sqrt(NB_BLOCKS_PER_CHUNK) * position.z;
 	for (int i = 0; i < NB_BLOCKS_PER_CHUNK; i++) {
@@ -46,37 +55,26 @@ inline void Chunk::gen() {
 	}
 
 	// Maintenant ça rigole plus
-	float maxX = sqrt(NB_BLOCKS_PER_CHUNK) * position.x + sqrt(NB_BLOCKS_PER_CHUNK);
-	float maxZ = sqrt(NB_BLOCKS_PER_CHUNK) * position.z + sqrt(NB_BLOCKS_PER_CHUNK);
-	float minX = sqrt(NB_BLOCKS_PER_CHUNK) * position.x;
-	float minZ = sqrt(NB_BLOCKS_PER_CHUNK) * position.z;
-
-	glm::vec2 lowerRight = glm::vec2(maxX, minZ);
-	glm::vec2 lowerLeft = glm::vec2(minX, minZ);
-	glm::vec2 upperRight = glm::vec2(maxX, maxZ);
-	glm::vec2 upperLeft = glm::vec2(minX, maxZ);
+	// --- Height intra stages ---
 	
-	float lrCoef = heightValuesS1[1];
-	float llCoef = heightValuesS1[0];
-	float urCoef = heightValuesS1[2];
-	float ulCoef = heightValuesS1[3];
 
-	float deltaX = lowerRight.x - lowerLeft.x;
-	float deltaY = upperLeft.y - lowerLeft.y;
-	float deltaFx = lrCoef - llCoef;
-	float deltaFy = ulCoef - llCoef;
-	float deltaFxy = llCoef + urCoef - lrCoef - ulCoef;
-
+	// --- Height stages ---
 	for (int i = 0; i < NB_BLOCKS_PER_CHUNK; i++) {
 		Block& b = blocks[i];
-		glm::vec2 curPos = glm::vec2(b.position.x, b.position.z);
-		float dx = curPos.x - lowerLeft.x;
-		float dy = curPos.y - lowerLeft.y;
+		float height = 0;
+		
+		for(int i = 0 ; i < genStage; i++) {
+			height += bilinearinterHeight(b.position, gradientMatrices[i]);
+		}
 
-		double biLinearInterpolation = (deltaFx * dx) / deltaX + (deltaFy * dy) / deltaY + (deltaFxy * dx * dy) / (deltaX * deltaY) + llCoef;
-		b.position.y = (int)biLinearInterpolation;
+		for (int i = 0; i < intraGenStage; i++) {
+			height += bilinearinterHeight(b.position, getIntraStageMatrix(b.position, IGMCoef[i], intraGradientMatrices[i]));
+		}
+		b.position.y = std::round(height);
 	}
+}
 
+inline void Chunk::pushMatrices() {
 	// -- Fill modelMatrices --
 	int i = 0;
 	for (Block b : blocks) {
@@ -122,8 +120,41 @@ inline glm::vec3 Chunk::getPosition() const {
 	return position;
 }
 
-inline glm::vec4 Chunk::getHeightvalues() const{
-	return glm::vec4(heightValuesS1[0], heightValuesS1[1], heightValuesS1[2], heightValuesS1[3]);
+inline glm::mat4 Chunk::getIntraStageMatrix(glm::vec3 bPos, float unitSize, glm::mat4 intraGradientMatrices[32][32]) {
+	float x = bPos.x - position.x * sqrt(NB_BLOCKS_PER_CHUNK);
+	float z = bPos.z - position.z * sqrt(NB_BLOCKS_PER_CHUNK);
+	
+	int indexX = static_cast<int>(x / (sqrt(NB_BLOCKS_PER_CHUNK) * unitSize));
+	int indexZ = static_cast<int>(z / (sqrt(NB_BLOCKS_PER_CHUNK) * unitSize));
+	glm::mat4 result = intraGradientMatrices[indexX][indexZ];
+
+	return result;
 }
+
+inline float Chunk::bilinearinterHeight(glm::vec3 bPos, glm::mat4 gradients) {
+	glm::vec2 lowerRight = glm::vec2(gradients[1].x, gradients[1].z);
+	glm::vec2 lowerLeft = glm::vec2(gradients[0].x, gradients[0].z);
+	glm::vec2 upperRight = glm::vec2(gradients[2].x, gradients[2].z);
+	glm::vec2 upperLeft = glm::vec2(gradients[3].x, gradients[3].z);
+
+	float lrCoef = gradients[1].y;
+	float llCoef = gradients[0].y;
+	float urCoef = gradients[2].y;
+	float ulCoef = gradients[3].y;
+
+	float deltaX = lowerRight.x - lowerLeft.x;
+	float deltaY = upperLeft.y - lowerLeft.y;
+	float deltaFx = lrCoef - llCoef;
+	float deltaFy = ulCoef - llCoef;
+	float deltaFxy = llCoef + urCoef - lrCoef - ulCoef;
+
+	glm::vec2 curPos = glm::vec2(bPos.x, bPos.z);
+	float dx = curPos.x - lowerLeft.x;
+	float dy = curPos.y - lowerLeft.y;
+
+	return (deltaFx * dx) / deltaX + (deltaFy * dy) / deltaY + (deltaFxy * dx * dy) / (deltaX * deltaY) + llCoef;
+}
+
+
 
 inline Chunk::~Chunk() {}

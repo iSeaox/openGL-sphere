@@ -7,6 +7,7 @@
 #include"src/blocks/block.h"
 #include "src/light.h"
 #include "src/world.h"
+#include "src/world-generator/heightGenerator.h"
 
 #include <glad/glad.h>
 
@@ -50,10 +51,14 @@ int main() {
 	// --- Lights ---
 	DirLight dirLight(getColorFrom(233, 221, 202), glm::vec3(-0.2f, -1.0f, -0.3f), 1.0f, 0.5f, 0.8f);
 
+	
 	// --- World ---
+	HeightGenerator heightGenerator(static_cast<unsigned int>(time(NULL)));
+	heightGenerator.load();
+
 	blockLoader = new BlockLoader();
 	world = new World(blockLoader);
-	world->gen();
+	world->gen(heightGenerator);
 
 	while (!glfwWindowShouldClose(window)) {
 		float currentFrame = static_cast<float>(glfwGetTime());

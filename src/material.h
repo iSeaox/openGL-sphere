@@ -22,10 +22,9 @@ public:
 	glm::vec3 specular;
 	float shininess;
 
-	inline Material();
-	inline Material(std::string name, EMaterial type, glm::vec3 color, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, float shininess);
-	inline Material(std::string name, EMaterial type, glm::vec3 color, float ambient, float diffuse, float specular, float shininess);
-	inline ~Material();
+	Material(std::string name, EMaterial type, glm::vec3 color, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, float shininess);
+	Material(std::string name, EMaterial type, glm::vec3 color, float ambient, float diffuse, float specular, float shininess);
+	~Material();
 
 private:
 	unsigned int VAO;
@@ -33,19 +32,6 @@ private:
 
 	inline void load();
 };
-
-inline Material::Material() {
-	name = "empty";
-	type = EMPTY;
-
-	color = glm::vec3(0.0f);
-	
-	ambient = glm::vec3(0.0f);
-	diffuse = glm::vec3(0.0f);
-	specular = glm::vec3(0.0f);
-
-	shininess = 16.0f;
-}
 
 inline Material::Material(std::string name, EMaterial type, glm::vec3 color, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, float shininess) {
 	this->name = name;
@@ -71,7 +57,7 @@ inline Material::Material(std::string name, EMaterial type, glm::vec3 color, flo
 }
 
 inline void Material::load() {
-	std::cout << "[material]<load> Matrial: " << name << ":" << type << " loaded" << std::endl;
+	std::cout << "[material]<load> Material: " << name << ":" << type << " loaded" << std::endl;
 }
 
 inline Material::~Material() {}

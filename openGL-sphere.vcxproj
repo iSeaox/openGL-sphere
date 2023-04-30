@@ -138,7 +138,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\blocks\block.h" />
+    <ClInclude Include="src\blocks\blockLoader.h" />
     <ClInclude Include="src\blocks\cubeModel.h" />
+    <ClInclude Include="src\blocks\templates\blockTemplate.h" />
     <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\chunk.h" />
     <ClInclude Include="src\color.h" />

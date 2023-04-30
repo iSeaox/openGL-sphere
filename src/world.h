@@ -6,6 +6,8 @@
 #include "blocks/block.h"
 #include "utils/matrixUtils.h"
 
+#include "blocks/blockLoader.h"
+
 #include <glm/glm/glm.hpp>
 #include <glm/glm/gtc/matrix_transform.hpp>
 #include <glad/glad.h>
@@ -21,7 +23,7 @@ public:
 
 	const static unsigned int GRAD_MAT_MAX_SIZE = 32;
 
-	World();
+	World(BlockLoader* blockLoader);
 	~World();
 	void gen();
 	std::vector<Chunk> getChunks() const;
@@ -33,6 +35,7 @@ private:
 	const static unsigned int NB_INTRA_STAGE = 2;
 	const static unsigned int NB_CHUNK = 256;
 
+	BlockLoader* blockLoader;
 
 	Block emptyBlock;
 
@@ -48,7 +51,10 @@ private:
 
 };
 
-inline World::World() {}
+inline World::World(BlockLoader* blockLoader) {
+	std::cout << "[world]<load> loading world..." << std::endl;
+	this->blockLoader = blockLoader;
+}
 
 inline void World::gen() {
 	srand(static_cast<unsigned int>(time(NULL)));

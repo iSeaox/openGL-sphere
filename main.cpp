@@ -97,9 +97,9 @@ int main() {
 		base_shader.setFloat("material.shininess", cMat->shininess);
 
 		int i = 0;
-		for (Chunk chunk : world->getChunks()) {
-			glBindVertexArray(chunk.getChunkVAO());
-			glDrawArraysInstanced(GL_TRIANGLES, 0, 36, chunk.getNbDrawableBlock());
+		for (Chunk* chunkPtr : world->getChunks()) {
+			glBindVertexArray(chunkPtr->getChunkVAO());
+			glDrawArraysInstanced(GL_TRIANGLES, 0, 36, chunkPtr->getNbDrawableBlock());
 			glBindVertexArray(0);
 			i++;
 		}

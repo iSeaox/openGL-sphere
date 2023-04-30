@@ -63,10 +63,10 @@ inline void Chunk::gen(HeightGenerator& heightGenerator) {
 		for (int z = position.z * WorldAttributes::CHUNK_SIZE; z < (position.z + 1) * WorldAttributes::CHUNK_SIZE; z++) {
 			Block b = getBlock(glm::vec3(x, 0.0f, z));
 
-			b.position.y = heightGenerator.getHeightOn(b.position) + 60;
+			b.position.y = heightGenerator.getHeightOn(b.position);
 			b.type = GRASS;
 
-			if (b.position.y >= 0 && b.position.y < 16) {
+			if (b.position.y >= position.y * WorldAttributes::CHUNK_SIZE && b.position.y < (position.y + 1) * WorldAttributes::CHUNK_SIZE) {
 				setBlock(b);
 				
 			}

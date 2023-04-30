@@ -26,17 +26,13 @@ public:
 	World(BlockLoader* blockLoader);
 	~World();
 	void gen(HeightGenerator& heightGenerator);
-	std::vector<Chunk> getChunks() const;
-	bool hasChunk(glm::vec3 chunkPosition) const;
-	bool hasChunk(float x, float y, float z) const;
+	std::vector<Chunk*> getChunks() const;
 
 private:
 	BlockLoader* blockLoader;
 
-	Block emptyBlock;
-
 	CubeModel cubeMod;
-	std::vector<Chunk> chunks;
+	std::vector<Chunk*> chunks;
 };
 
 inline World::World(BlockLoader* blockLoader) {
@@ -48,44 +44,30 @@ inline void World::gen(HeightGenerator& heightGenerator) {
 	// --- Generate Chunks ---
 	int x = 0;
 	int z = 0;
-	for (int i = 0; i < WorldAttributes::NB_CHUNK; i++) {
-		Chunk chunk(glm::vec3(x, 0.0f, z), cubeMod);
-		chunk.gen(heightGenerator);
-		chunks.push_back(chunk);
-		x++;
-		if(x == static_cast<int>(sqrt(WorldAttributes::NB_CHUNK))) {
-			x = 0;
-			z++;
+	int y = 0;
+	for (int i = 0; i < WorldAttributes::NB_CHUNK * WorldAttributes::WOLRD_HEIGHT_CHUNK; i++) {
+		chunks.push_back(new Chunk(glm::vec3(x, y, z), cubeMod));
+		chunks[i]->gen(heightGenerator);
+
+		z++;
+		if(z == static_cast<int>(sqrt(WorldAttributes::NB_CHUNK))) {
+			z = 0;
+			y++;
+		}
+
+		if (y == WorldAttributes::WOLRD_HEIGHT_CHUNK) {
+			y = 0;
+			x++;
 		}
 	}
 
-	for (Chunk& chunk : chunks) {
-		chunk.pushMatrices();
+	for (Chunk* chunkPtr : chunks) {
+		chunkPtr->pushMatrices();
 	}
 }
 
-inline std::vector<Chunk> World::getChunks() const {
+inline std::vector<Chunk*> World::getChunks() const {
 	return chunks;
-}
-
-inline bool World::hasChunk(glm::vec3 chunkPosition) const
-{
-	for (Chunk chunk : chunks) {
-		if (chunkPosition == chunk.getPosition()) {
-			return true;
-		}
-	}
-	return false;
-}
-
-inline bool World::hasChunk(float x, float y, float z) const
-{
-	for (Chunk chunk : chunks) {
-		if (glm::vec3(x, y, z) == chunk.getPosition()) {
-			return true;
-		}
-	}
-	return false;
 }
 
 World::~World() {}

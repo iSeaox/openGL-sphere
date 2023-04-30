@@ -159,7 +159,7 @@ inline int HeightGenerator::getHeightOn(glm::vec3 position) {
 		height += bilinearinterHeight(position, stageGradients[i]);
 	}
 
-	return std::round(height);
+	return std::round(height) + WorldAttributes::HEIGHT_COMPENSATION;
 }
 
 inline void HeightGenerator::genStageGradients(GradientMap& gradientMap, float coef, int unitSize, int xSize, int zSize) {

@@ -10,14 +10,14 @@ public:
 
 private:
 	Material* material;
-	int metadata;
+	uint8_t metadata;
 };
 
 BlockTemplate ::BlockTemplate(Material* material) {
 	this->material = material;
 	metadata = 0;
 
-	std::cout << "[blockTemplate]<load> blockTemplate: " << material->name << ":" << material->type << " | " << metadata << " loaded" << std::endl;
+	std::cout << "[blockTemplate]<load> blockTemplate: " << material->name << ":" << material->type << " | " << (int) metadata << " loaded" << std::endl;
 }
 
 BlockTemplate ::~BlockTemplate() {}

@@ -36,6 +36,7 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 int main() {
+
 	// --- init ---
 	GLFWwindow* window = loadGLFW(WINDOW_WIDTH, WINDOW_HEIGHT);
 	loadGLAD(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -93,7 +94,7 @@ int main() {
 		int i = 0;
 		for (Chunk chunk : world->getChunks()) {
 			glBindVertexArray(chunk.getChunkVAO());
-			glDrawArraysInstanced(GL_TRIANGLES, 0, 36, Chunk::NB_BLOCKS_PER_CHUNK);
+			glDrawArraysInstanced(GL_TRIANGLES, 0, 36, chunk.getNbDrawableBlock());
 			glBindVertexArray(0);
 			i++;
 		}

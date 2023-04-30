@@ -64,38 +64,38 @@ inline void World::gen() {
 
 	// -- Stage 1 --
 	float coef = 12.5f;
-	float unitSize = 8 * sqrt(Chunk::NB_BLOCKS_PER_CHUNK);
+	float unitSize = 8 * Chunk::CHUNK_SIZE;
 	glm::mat4 gradientStage1[1][GRAD_MAT_MAX_SIZE];
 	genStageMatrices(gradientStage1, coef, unitSize, 1, 1);
 
 
 	// -- Stage 2 --
 	coef = 10.0f;
-	unitSize = 4 * sqrt(Chunk::NB_BLOCKS_PER_CHUNK);
+	unitSize = 4 * Chunk::CHUNK_SIZE;
 	glm::mat4 gradientStage2[2][GRAD_MAT_MAX_SIZE];
 	genStageMatrices(gradientStage2, coef, unitSize, 2, 2);
 
 	// -- Stage 3 --
 	coef = 15.0f;
-	unitSize = 2 * sqrt(Chunk::NB_BLOCKS_PER_CHUNK);
+	unitSize = 2 * Chunk::CHUNK_SIZE;
 	glm::mat4 gradientStage3[4][GRAD_MAT_MAX_SIZE];
 	genStageMatrices(gradientStage3, coef, unitSize, 4, 4);
 
 	// -- Stage 4 --
 	coef = 8.0f;
-	unitSize = 1 * sqrt(Chunk::NB_BLOCKS_PER_CHUNK);
+	unitSize = 1 * Chunk::CHUNK_SIZE;
 	glm::mat4 gradientStage4[8][GRAD_MAT_MAX_SIZE];
 	genStageMatrices(gradientStage4, coef, unitSize, 8, 8);
 
 	// -- Intra Stage 1 --
 	coef = 4.0f;
-	unitSize = 0.5f * sqrt(Chunk::NB_BLOCKS_PER_CHUNK);
+	unitSize = 0.5f * Chunk::CHUNK_SIZE;
 	glm::mat4 gradientInraStage1[GRAD_MAT_MAX_SIZE][GRAD_MAT_MAX_SIZE];
 	genStageMatrices(gradientInraStage1, coef, unitSize, 16, 16);
 
 	// -- Intra Stage 2 --
 	coef = 1.5f;
-	unitSize = 0.25f * sqrt(Chunk::NB_BLOCKS_PER_CHUNK);
+	unitSize = 0.25f * Chunk::CHUNK_SIZE;
 	glm::mat4 gradientInraStage2[GRAD_MAT_MAX_SIZE][GRAD_MAT_MAX_SIZE];
 	genStageMatrices(gradientInraStage2, coef, unitSize, 32, 32);
 
@@ -128,7 +128,7 @@ inline void World::gen() {
 		}
 	}
 
-	for (Chunk chunk : chunks) {
+	for (Chunk& chunk : chunks) {
 		chunk.pushMatrices();
 	}
 }

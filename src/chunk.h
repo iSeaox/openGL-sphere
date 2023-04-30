@@ -7,9 +7,9 @@
 
 class Chunk {
 public:
-	const static int NB_BLOCKS_PER_CHUNK = 16 * 16;
+	const static int CHUNK_SIZE = 16;
 
-	Block blocks[NB_BLOCKS_PER_CHUNK];
+	char blockT[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
 
 	Chunk();
 	Chunk(glm::vec3 position, CubeModel& cubeMod);
@@ -20,7 +20,13 @@ public:
 	unsigned int getChunkVAO() const;
 	glm::vec3 getPosition() const;
 
+	void setBlock(glm::vec3 position, EMaterial mat);
+	void setBlock(Block& block);
+	Block getBlock(glm::vec3 pos);
+
 	glm::mat4 getIntraStageMatrix(glm::vec3 bPos, float unitSize, glm::mat4 intraGradientMatrices[32][32]);
+
+	unsigned int getNbDrawableBlock();
 
 private:
 	glm::vec3 position;
@@ -28,9 +34,13 @@ private:
 	unsigned int chunkVAO;
 	unsigned int chunkModelVBO;
 
-	glm::mat4 chunkModelMatrices[NB_BLOCKS_PER_CHUNK];
+	unsigned int nbDrawableBlock;
+
+	glm::mat4 chunkModelMatrices[CHUNK_SIZE * CHUNK_SIZE];
 
 	float bilinearinterHeight(glm::vec3 bPos, glm::mat4 gradients);
+	glm::vec3 getPositionFromIndex(int index);
+	int getIndexFromPosition(glm::vec3 pos);
 };
 
 inline Chunk::Chunk() {}
@@ -43,15 +53,8 @@ inline Chunk::Chunk(glm::vec3 position, CubeModel& cubeMod) {
 }
 
 inline void Chunk::gen(glm::mat4 gradientMatrices[], int genStage, glm::mat4 intraGradientMatrices[][32][32], int intraGenStage, float IGMCoef[]) {
-	int x = sqrt(NB_BLOCKS_PER_CHUNK) * position.x;
-	int z = sqrt(NB_BLOCKS_PER_CHUNK) * position.z;
-	for (int i = 0; i < NB_BLOCKS_PER_CHUNK; i++) {
-		blocks[i] = Block(EMaterial::GRASS, glm::vec3(x, 0.0f, z));
-		x++;
-		if (x == sqrt(NB_BLOCKS_PER_CHUNK) * position.x + sqrt(NB_BLOCKS_PER_CHUNK)) {
-			x = sqrt(NB_BLOCKS_PER_CHUNK) * position.x;
-			z++;
-		}
+	for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE; i++) {
+		blockT[i] = -1;
 	}
 
 	// Maintenant ça rigole plus
@@ -59,31 +62,40 @@ inline void Chunk::gen(glm::mat4 gradientMatrices[], int genStage, glm::mat4 int
 	
 
 	// --- Height stages ---
-	for (int i = 0; i < NB_BLOCKS_PER_CHUNK; i++) {
-		Block& b = blocks[i];
-		float height = 0;
-		
-		for(int i = 0 ; i < genStage; i++) {
-			height += bilinearinterHeight(b.position, gradientMatrices[i]);
-		}
+	for (int x = position.x * CHUNK_SIZE; x < (position.x + 1) * CHUNK_SIZE; x++) {
+		for (int z = position.z * CHUNK_SIZE; z < (position.z + 1) * CHUNK_SIZE; z++) {
+			Block b = getBlock(glm::vec3(x, 0.0f, z));
+			float height = 0;
 
-		for (int i = 0; i < intraGenStage; i++) {
-			height += bilinearinterHeight(b.position, getIntraStageMatrix(b.position, IGMCoef[i], intraGradientMatrices[i]));
+			for (int i = 0; i < genStage; i++) {
+				height += bilinearinterHeight(b.position, gradientMatrices[i]);
+			}
+
+			for (int i = 0; i < intraGenStage; i++) {
+				height += bilinearinterHeight(b.position, getIntraStageMatrix(b.position, IGMCoef[i], intraGradientMatrices[i]));
+			}
+			b.position.y = std::round(height) + 60;
+			b.type = GRASS;
+
+			if (std::round(height) + 60 >= 0 && std::round(height) + 60 < 16) {
+				setBlock(b);
+				
+			}
 		}
-		b.position.y = std::round(height);
 	}
 }
 
 inline void Chunk::pushMatrices() {
 	// -- Fill modelMatrices --
-	int i = 0;
-	for (Block b : blocks) {
-		if (b.type == EMaterial::EMPTY) continue;
+	int j = 0;
+	for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE; i++) {
+		if (blockT[i] == -1) continue;
 		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, b.position);
-		chunkModelMatrices[i] = model;
-		i++;
+		model = glm::translate(model, getPositionFromIndex(i));
+		chunkModelMatrices[j] = model;
+		j++;
 	}
+	nbDrawableBlock = j;
 
 	// -- Bind new buffer to worldVAO
 
@@ -120,15 +132,33 @@ inline glm::vec3 Chunk::getPosition() const {
 	return position;
 }
 
+inline void Chunk::setBlock(glm::vec3 bPos, EMaterial mat) {
+	blockT[getIndexFromPosition(bPos)] = mat;
+}
+
+inline void Chunk::setBlock(Block& block) {
+	blockT[getIndexFromPosition(block.position)] = block.type;
+}
+
+inline Block Chunk::getBlock(glm::vec3 bPos) {
+	EMaterial type = (EMaterial)((int)blockT[getIndexFromPosition(bPos)]);
+	Block b(type, bPos);
+	return b;
+}
+
 inline glm::mat4 Chunk::getIntraStageMatrix(glm::vec3 bPos, float unitSize, glm::mat4 intraGradientMatrices[32][32]) {
-	float x = bPos.x - position.x * sqrt(NB_BLOCKS_PER_CHUNK);
-	float z = bPos.z - position.z * sqrt(NB_BLOCKS_PER_CHUNK);
+	float x = bPos.x - position.x * CHUNK_SIZE;
+	float z = bPos.z - position.z * CHUNK_SIZE;
 	
-	int indexX = static_cast<int>(x / (sqrt(NB_BLOCKS_PER_CHUNK) * unitSize));
-	int indexZ = static_cast<int>(z / (sqrt(NB_BLOCKS_PER_CHUNK) * unitSize));
+	int indexX = static_cast<int>(x / (CHUNK_SIZE * unitSize));
+	int indexZ = static_cast<int>(z / (CHUNK_SIZE * unitSize));
 	glm::mat4 result = intraGradientMatrices[indexX][indexZ];
 
 	return result;
+}
+
+inline unsigned int Chunk::getNbDrawableBlock(){
+	return nbDrawableBlock;
 }
 
 inline float Chunk::bilinearinterHeight(glm::vec3 bPos, glm::mat4 gradients) {
@@ -153,6 +183,19 @@ inline float Chunk::bilinearinterHeight(glm::vec3 bPos, glm::mat4 gradients) {
 	float dy = curPos.y - lowerLeft.y;
 
 	return (deltaFx * dx) / deltaX + (deltaFy * dy) / deltaY + (deltaFxy * dx * dy) / (deltaX * deltaY) + llCoef;
+}
+
+inline glm::vec3 Chunk::getPositionFromIndex(int index) {
+	int temp = index;
+	int x = temp / (CHUNK_SIZE * CHUNK_SIZE);
+	temp -= x * CHUNK_SIZE * CHUNK_SIZE;
+	int y = temp / CHUNK_SIZE;
+	temp -= y * CHUNK_SIZE;
+	return glm::vec3(x + position.x * CHUNK_SIZE, y + position.y * CHUNK_SIZE, temp + position.z * CHUNK_SIZE);
+}
+
+inline int Chunk::getIndexFromPosition(glm::vec3 pos) {
+	return (static_cast<int>(pos.z) % CHUNK_SIZE) + (static_cast<int>(pos.y) % CHUNK_SIZE) * CHUNK_SIZE + (static_cast<int>(pos.x) % CHUNK_SIZE) * CHUNK_SIZE * CHUNK_SIZE;
 }
 
 

@@ -7,6 +7,7 @@
 #include"src/blocks/block.h"
 #include "src/light.h"
 #include "src/world.h"
+#include "src/world-generator/heightGenerator.h"
 
 #include <glad/glad.h>
 
@@ -25,7 +26,8 @@ void update(GLFWwindow* window);
 
 Camera camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
-Material materials[2];
+BlockLoader* blockLoader;
+World* world;
 
 float lastXMouse = WINDOW_WIDTH / 2.0f;
 float lastYMouse = WINDOW_HEIGHT / 2.0f;
@@ -35,6 +37,7 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 int main() {
+
 	// --- init ---
 	GLFWwindow* window = loadGLFW(WINDOW_WIDTH, WINDOW_HEIGHT);
 	loadGLAD(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -45,16 +48,17 @@ int main() {
 	// --- shader ---
 	Shader base_shader("./shaders/base_shader.vs", "./shaders/base_shader.fs");
 
-	// --- Materials ---
-	materials[EMaterial::GRASS] = Material("grass", EMaterial::GRASS, getColorFrom(144, 190, 109), 0.4f, 0.4f, 0.2f, 16.0f);
-	materials[EMaterial::ROCK] = Material("rock", EMaterial::ROCK, getColorFrom(112, 102, 91), 0.3f, 0.4f, 0.1f, 16.0f);
-
 	// --- Lights ---
 	DirLight dirLight(getColorFrom(233, 221, 202), glm::vec3(-0.2f, -1.0f, -0.3f), 1.0f, 0.5f, 0.8f);
 
+	
 	// --- World ---
-	World world;
-	world.gen();
+	HeightGenerator heightGenerator(static_cast<unsigned int>(time(NULL)));
+	heightGenerator.load();
+
+	blockLoader = new BlockLoader();
+	world = new World(blockLoader);
+	world->gen(heightGenerator);
 
 	while (!glfwWindowShouldClose(window)) {
 		float currentFrame = static_cast<float>(glfwGetTime());
@@ -85,17 +89,17 @@ int main() {
 		glm::mat4 view = camera.getViewMatrix();
 		base_shader.setMat4("view", view);
 
-		Material cMat = materials[EMaterial::GRASS];
-		base_shader.setVec3("material.color", cMat.color);
-		base_shader.setVec3("material.ambient", cMat.ambient);
-		base_shader.setVec3("material.diffuse", cMat.diffuse);
-		base_shader.setVec3("material.specular", cMat.specular);
-		base_shader.setFloat("material.shininess", cMat.shininess);
+		Material* cMat = blockLoader->getMaterial(GRASS);
+		base_shader.setVec3("material.color", cMat->color);
+		base_shader.setVec3("material.ambient", cMat->ambient);
+		base_shader.setVec3("material.diffuse", cMat->diffuse);
+		base_shader.setVec3("material.specular", cMat->specular);
+		base_shader.setFloat("material.shininess", cMat->shininess);
 
 		int i = 0;
-		for (Chunk chunk : world.getChunks()) {
-			glBindVertexArray(chunk.getChunkVAO());
-			glDrawArraysInstanced(GL_TRIANGLES, 0, 36, Chunk::NB_BLOCKS_PER_CHUNK);
+		for (Chunk* chunkPtr : world->getChunks()) {
+			glBindVertexArray(chunkPtr->getChunkVAO());
+			glDrawArraysInstanced(GL_TRIANGLES, 0, 36, chunkPtr->getNbDrawableBlock());
 			glBindVertexArray(0);
 			i++;
 		}

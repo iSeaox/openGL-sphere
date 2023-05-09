@@ -6,6 +6,7 @@
 #include "templates/blockTemplate.h"
 
 #include "../color.h"
+#include "../shader.h"
 
 class BlockLoader {
 public:
@@ -14,6 +15,7 @@ public:
 	~BlockLoader();
 
 	Material* getMaterial(EMaterial material);
+	void pushMaterialOnShader(Shader& shader);
 
 private:
 
@@ -43,4 +45,16 @@ BlockLoader::~BlockLoader() {
 
 inline Material* BlockLoader::getMaterial(EMaterial material) {
 	return materials[material];
+}
+
+inline void BlockLoader::pushMaterialOnShader(Shader& shader) {
+	shader.use();
+
+	for (Material* matPtr : materials) {
+		shader.setVec3("materials[" + std::to_string(matPtr->type) + "].color", matPtr->color);
+		shader.setVec3("materials[" + std::to_string(matPtr->type) + "].ambient", matPtr->ambient);
+		shader.setVec3("materials[" + std::to_string(matPtr->type) + "].diffuse", matPtr->diffuse);
+		shader.setVec3("materials[" + std::to_string(matPtr->type) + "].specular", matPtr->specular);
+		shader.setFloat("materials[" + std::to_string(matPtr->type) + "].shininess", matPtr->shininess);
+	}
 }

@@ -16,7 +16,8 @@ public:
 	~Chunk();
 
 	void gen(HeightGenerator& heightGenerator);
-	void pushMatrices();
+	void pushModelMatrices();
+	void pushBlockMaterials();
 	unsigned int getChunkVAO() const;
 	glm::vec3 getPosition() const;
 
@@ -31,10 +32,12 @@ private:
 
 	unsigned int chunkVAO;
 	unsigned int chunkModelVBO;
+	unsigned int chunkBlockMaterialVBO;
 
 	unsigned int nbDrawableBlock;
 
-	glm::mat4 chunkModelMatrices[WorldAttributes::CHUNK_SIZE * WorldAttributes::CHUNK_SIZE];
+	glm::mat4 chunkModelMatrices[WorldAttributes::CHUNK_SIZE * WorldAttributes::CHUNK_SIZE * 3];
+	float chunkBlockMaterial[WorldAttributes::CHUNK_SIZE * WorldAttributes::CHUNK_SIZE * WorldAttributes::CHUNK_SIZE * 3];
 
 	glm::vec3 getPositionFromIndex(int index);
 	int getIndexFromPosition(glm::vec3 pos);
@@ -45,6 +48,8 @@ inline Chunk::Chunk() {}
 inline Chunk::Chunk(glm::vec3 position, CubeModel& cubeMod) {
 	this->position = position;
 	glGenBuffers(1, &chunkModelVBO);
+	glGenBuffers(1, &chunkBlockMaterialVBO);
+
 	glGenVertexArrays(1, &chunkVAO);
 	cubeMod.bindVertexVBOTo(chunkVAO);
 }
@@ -55,10 +60,6 @@ inline void Chunk::gen(HeightGenerator& heightGenerator) {
 	}
 
 	// Maintenant ça rigole plus
-	// --- Height intra stages ---
-	
-
-	// --- Height stages ---
 	for (int x = position.x * WorldAttributes::CHUNK_SIZE; x < (position.x + 1) * WorldAttributes::CHUNK_SIZE; x++) {
 		for (int z = position.z * WorldAttributes::CHUNK_SIZE; z < (position.z + 1) * WorldAttributes::CHUNK_SIZE; z++) {
 			Block b = getBlock(glm::vec3(x, 0.0f, z));
@@ -70,11 +71,44 @@ inline void Chunk::gen(HeightGenerator& heightGenerator) {
 				setBlock(b);
 				
 			}
+			b.position.y -= 1;
+			b.type = ROCK;
+
+			if (b.position.y >= position.y * WorldAttributes::CHUNK_SIZE && b.position.y < (position.y + 1) * WorldAttributes::CHUNK_SIZE) {
+				setBlock(b);
+			}
+
+			b.position.y -= 1;
+
+			if (b.position.y >= position.y * WorldAttributes::CHUNK_SIZE && b.position.y < (position.y + 1) * WorldAttributes::CHUNK_SIZE) {
+				setBlock(b);
+			}
 		}
 	}
 }
 
-inline void Chunk::pushMatrices() {
+inline void Chunk::pushBlockMaterials() {
+	int j = 0;
+	for (int i = 0; i < WorldAttributes::CHUNK_SIZE * WorldAttributes::CHUNK_SIZE * WorldAttributes::CHUNK_SIZE; i++) {
+		if (blockT[i] == -1) continue;
+		chunkBlockMaterial[j] = static_cast<float>(blockT[i]);
+		j++;
+	}
+
+	// -- Bind new buffer to worldVAO
+	glBindVertexArray(chunkVAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, chunkBlockMaterialVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(chunkBlockMaterial), chunkBlockMaterial, GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+	glVertexAttribDivisor(2, 1);
+	glBindVertexArray(0);
+}
+
+inline void Chunk::pushModelMatrices() {
 	// -- Fill modelMatrices --
 	int j = 0;
 	for (int i = 0; i < WorldAttributes::CHUNK_SIZE * WorldAttributes::CHUNK_SIZE * WorldAttributes::CHUNK_SIZE; i++) {
@@ -93,22 +127,22 @@ inline void Chunk::pushMatrices() {
 	glBindBuffer(GL_ARRAY_BUFFER, chunkModelVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(chunkModelMatrices), chunkModelMatrices, GL_STATIC_DRAW);
 
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
-
 	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
 
 	glEnableVertexAttribArray(4);
-	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
 
 	glEnableVertexAttribArray(5);
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
 
-	glVertexAttribDivisor(2, 1);
+	glEnableVertexAttribArray(6);
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+
 	glVertexAttribDivisor(3, 1);
 	glVertexAttribDivisor(4, 1);
 	glVertexAttribDivisor(5, 1);
+	glVertexAttribDivisor(6, 1);
 
 	glBindVertexArray(0);
 }

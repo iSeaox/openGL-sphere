@@ -1,4 +1,4 @@
-#version 330 core
+#version 450 core
 
 struct Material {
 	vec3 color;
@@ -18,18 +18,23 @@ struct DirLight {
 	vec3 specular;
 };
 
+#define NB_MAT 2
 vec3 computeDirLight(DirLight light, vec3 normal, vec3 viewDir);
 
 in vec3 normal;
 in vec3 fragPos;
+flat in int materialID;
 
 out vec4 FragColor;
 
-uniform Material material;
+uniform Material materials[NB_MAT];
 uniform DirLight dirLight;
 uniform vec3 viewPos;
 
+Material material;
+
 void main() {
+	material = materials[materialID];
 	vec3 norm = normalize(normal);
 	vec3 viewDir = normalize(viewPos - fragPos);
 	vec3 result = computeDirLight(dirLight, norm, viewDir);

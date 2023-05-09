@@ -49,8 +49,14 @@ int main() {
 	Shader base_shader("./shaders/base_shader.vs", "./shaders/base_shader.fs");
 
 	// --- Lights ---
-	DirLight dirLight(getColorFrom(233, 221, 202), glm::vec3(-0.2f, -1.0f, -0.3f), 1.0f, 0.5f, 0.8f);
+	DirLight dirLight(getColorFrom(232, 221, 181), glm::vec3(-0.2f, -1.0f, -0.3f), 1.0f, 0.5f, 0.8f);
+	base_shader.use();
 
+	base_shader.setVec3("viewPos", camera.m_position);
+	base_shader.setVec3("dirLight.direction", dirLight.direction);
+	base_shader.setVec3("dirLight.ambient", dirLight.ambient);
+	base_shader.setVec3("dirLight.diffuse", dirLight.diffuse);
+	base_shader.setVec3("dirLight.specular", dirLight.specular);
 	
 	// --- World ---
 	HeightGenerator heightGenerator(static_cast<unsigned int>(time(NULL)));
@@ -59,6 +65,8 @@ int main() {
 	blockLoader = new BlockLoader();
 	world = new World(blockLoader);
 	world->gen(heightGenerator);
+
+	blockLoader->pushMaterialOnShader(base_shader);
 
 	while (!glfwWindowShouldClose(window)) {
 		float currentFrame = static_cast<float>(glfwGetTime());
@@ -73,28 +81,14 @@ int main() {
 
 		// --- render ---
 		base_shader.use();
-
-		// - Lights -
-		base_shader.setVec3("viewPos", camera.m_position);
-		base_shader.setVec3("dirLight.direction", dirLight.direction);
-		base_shader.setVec3("dirLight.ambient", dirLight.ambient);
-		base_shader.setVec3("dirLight.diffuse", dirLight.diffuse);
-		base_shader.setVec3("dirLight.specular", dirLight.specular);
 		
 		// - Projection matrix -
-		glm::mat4 projection = glm::perspective(glm::radians(camera.m_zoom), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 400.0f);
+		glm::mat4 projection = glm::perspective(glm::radians(camera.m_zoom), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 300.0f);
 		base_shader.setMat4("projection", projection);
 
 		// - View Matrix -
 		glm::mat4 view = camera.getViewMatrix();
 		base_shader.setMat4("view", view);
-
-		Material* cMat = blockLoader->getMaterial(GRASS);
-		base_shader.setVec3("material.color", cMat->color);
-		base_shader.setVec3("material.ambient", cMat->ambient);
-		base_shader.setVec3("material.diffuse", cMat->diffuse);
-		base_shader.setVec3("material.specular", cMat->specular);
-		base_shader.setFloat("material.shininess", cMat->shininess);
 
 		int i = 0;
 		for (Chunk* chunkPtr : world->getChunks()) {
@@ -113,8 +107,8 @@ int main() {
 
 GLFWwindow* loadGLFW(unsigned int wWidth, unsigned int wHeight) {
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	GLFWwindow* window = glfwCreateWindow(wWidth, wHeight, "Sphere", NULL, NULL);
@@ -131,7 +125,7 @@ GLFWwindow* loadGLFW(unsigned int wWidth, unsigned int wHeight) {
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	std::cout << "[GLFW]<load> GLFW Window loaded" << std::endl;
+	std::cout << "[GLFW]<load> GLFW Window loaded with OpenGL-4.5" << std::endl;
 	return window;
 }
 

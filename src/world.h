@@ -4,7 +4,6 @@
 #include "blocks/block.h"
 #include "chunk.h"
 #include "blocks/block.h"
-#include "utils/matrixUtils.h"
 
 #include "blocks/blockLoader.h"
 
@@ -62,7 +61,8 @@ inline void World::gen(HeightGenerator& heightGenerator) {
 	}
 
 	for (Chunk* chunkPtr : chunks) {
-		chunkPtr->pushMatrices();
+		chunkPtr->pushModelMatrices();
+		chunkPtr->pushBlockMaterials();
 	}
 }
 
